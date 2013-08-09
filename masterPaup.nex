@@ -1,0 +1,6 @@
+#NEXUS
+log start replace;
+execute ../../test/simple.nex;
+execute paupCmd.nex;
+log stop;
+quit;

@@ -1,0 +1,31 @@
+#NEXUS
+begin CHIMNeSSweep;
+	set seed=34 
+		shape=1.0 
+	[	freq = (  0.6942571  0.1555456  0.1420966 ) 
+	]
+		freq = (0.2 0.3 0.2 0.3) 
+	
+		rmat = (0.01 5 2 2 6 1.5) [(0.00666667   3.333330   1.333330 1.333330   4.000000 1.000000)  ]
+		checkpointInterval = 7 
+		reportInterval = 5
+		sampleInterval = 6
+		mcmcIterations = 20
+		checkpointfile = chckpt.nex
+		sampletreefile = sample.t
+		sampleparamfile = sample.p
+		reportfile = cout 
+		;
+	Ultrametricize minEdgeLen=0.00001;
+	EdgeLenFromDepth ;
+	Savetree file = 't.nex' ;
+	SeqLScore ;
+	move freqWindow = (1 1 1 1) freqpriormean = (1 1 1 1) weight = 1;
+	move rmatWindow = (1 2 1 1 2 1) rmatpriormean = (1 5 1 1 5 1) weight = 1;
+	mcmc ;
+
+[
+	SeqLScore ;
+]
+
+end;

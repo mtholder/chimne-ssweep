@@ -1,0 +1,773 @@
+\documentclass[letterpaper]{article}
+\usepackage{graphicx}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{amsthm}
+\usepackage{multicol}
+
+\algsetup{indent=2em} 
+
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\textwidth = 6.0 in
+\textheight = 10 in
+\oddsidemargin = -0.0 in
+\evensidemargin = -0.0 in
+\topmargin = -0.6 in
+\headheight = 0.0 in
+\headsep = 0.0 in
+\parskip = 0.1in
+\parindent = 0.0in
+\usepackage{paralist} %compactenum
+
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{corollary}[theorem]{Corollary}
+%\newtheorem{definition}{Definition}
+\usepackage{tipa}
+\usepackage{amsfonts}
+\usepackage[mathscr]{eucal}
+
+% Use the natbib package for the bibliography
+\usepackage[round]{natbib}
+\bibliographystyle{apalike}
+\newcommand{\subscript}[1]{\ensuremath{_{#1}}}
+\newcommand{\chimnesweep}[0]{\textsc{CHIMN\subscript{e} SSweep}}
+\newcommand{\chimnesweeps}[0]{{\chimnesweep} }
+
+\newcommand{\sweep}[1]{{\ensuremath{\mathbf{s}_{#1}}}}
+\newcommand{\sweeptime}[1]{{\ensuremath{t_{#1}}}}
+\newcommand{\sweepfreq}[1]{{\ensuremath{\phi_{#1}}}}
+\newcommand{\sweeploc}[1]{{\ensuremath{z_{#1}}}}
+
+\newcommand{\genealogy}{{\ensuremath{\mathbf{G}}}}
+\newcommand{\sequences}{{\ensuremath{\mathbf{X}}}}
+\newcommand{\popsize}{{\ensuremath{N_e}}}
+\newcommand{\ratesweep}{{\ensuremath{\rho}}}
+\newcommand{\sweepalpha}{{\ensuremath{\alpha}}}
+\newcommand{\sweepbeta}{{\ensuremath{\beta}}}
+\newcommand{\basefreqs}{{\ensuremath{\pi}}}
+\newcommand{\pinvar}{{\ensuremath{\iota}}}
+\newcommand{\selectionmodel}{{\ensuremath{\ratesweep,\sweepalpha,\sweepbeta}}}
+\newcommand{\mutmodel}{{\ensuremath{\basefreqs,\kappa,\pinvar}}}
+\newcommand{\topo}{{\ensuremath{T}}}
+\newcommand{\edgesAt}{{\ensuremath{\mathcal{E}}}}
+\newcommand{\lineagesAfter}{{\ensuremath{\mathcal{L}^{+}}}}
+\newcommand{\lineagesBefore}{{\ensuremath{\mathcal{L}^{-}}}}
+\newcommand{\interval}[1]{{\ensuremath{\mathcal{I}_{#1}}}}
+\newcommand{\intervalEnd}[1]{{\ensuremath{t_e(\interval{#1})}}}
+\newcommand{\intervalBeg}[1]{{\ensuremath{t_b(\interval{#1})}}}
+\newcommand{\entireSweepSet}{{\ensuremath{\mathcal{S}}}}
+\newcommand{\connectedSweepSet}{{\ensuremath{\mathcal{S}_c}}}
+\newcommand{\internalConnectedSweepSet}{{\ensuremath{\mathcal{S}_i}}}
+\newcommand{\outdegConnectedSweepSet}{{\ensuremath{\mathcal{S}_d}}}
+\newcommand{\sweepsetLocs}{{\ensuremath{\entireSweepSet^{(z)}}}}
+\newcommand{\sweepsetTFs}{{\ensuremath{\entireSweepSet^{(t,\phi)}}}}
+\newcommand{\sweepsetL}[1]{{\ensuremath{\sweepsetLocs({#1})}}}
+\newcommand{\sweepsetTF}[1]{{\ensuremath{\sweepsetTFs({#1})}}}
+\newcommand{\sweepset}[1]{{\ensuremath{\entireSweepSet({#1})}}}
+\newcommand{\coalescences}[2]{{\ensuremath{\mathcal{C}({#1},{#2})}}}
+\newcommand{\branchlengths}{{\ensuremath{\mathbf{\nu}}}}
+\newcommand{\NULL}{{\ensuremath{\mbox{{\bf \sf NULL}}}}}
+\newcommand{\timeNext}[1]{{\ensuremath{t_n(#1)}}}
+\newcommand{\outdegree}[1]{{\ensuremath{\deg^{+}\left(#1\right)}}}
+\newcommand{\indegree}[1]{{\ensuremath{\deg^{-}\left(#1\right)}}}
+\newcommand{\propProb}[1]{{\ensuremath{\gamma_{\mbox{\tiny #1}}}}}
+\newcommand{\hastings}[1]{{\ensuremath{H{\mbox{\tiny #1}}}}}
+	
+	
+\title{\chimnesweeps notes}
+\author{Mark Holder}
+
+\usepackage{url}
+%\usepackage[pdfstartview={FitH}]{hyperref}
+%\hypersetup{backref,  pdfpagemode=FullScreen,  linkcolor=blue, citecolor=red, colorlinks=true, hyperindex=true}
+
+\begin{document}
+
+\maketitle
+\setcounter{tocdepth}{2}
+
+
+
+\tableofcontents
+
+
+\section{Notation}
+\begin{compactitem}
+	\item[\sequences] the matrix of sequence data
+	\item[\genealogy] the tree or genealogy that depicts the relationships between the samples.
+	\item[\popsize] the effective population size
+	\item[\ratesweep] the rate of selective sweeps (as a function of absolute time)
+	 \item[\sweepalpha], alpha parameter for the Beta distribution that is the prior for the final frequency parameters of sweeps
+	 \item[\sweepbeta], beta parameter for the Beta distribution that is the prior for the final frequency parameters of sweeps
+	\item[\basefreqs] the equilibrium base frequencies
+	\item[$\kappa$] the transition/transversion rate ratio
+	\item[\pinvar] is the proportion of invariant sites.
+	\item[\sweep{i}] a collection of events that describe a selective sweep $i$. $\sweep{i} = (\sweeptime{i},\sweepfreq{i}, \sweeploc{i})$
+	\item[\sweeptime{i}] the time of occurrence of sweep $i$, measured as the time before the last sample 
+	\item[\sweepfreq{i}] the frequency of the selected allele after the sweep $i$
+	\item[\sweeploc{i}] the node of the selective sweep event $i$. The real number distance can be mapped to a tree location by traversing the tree from the root in preorder with branches rotated by sorting children left to right on the basis of the lowest leaf index descendant. The value $\NULL$ will be used to indicate that the node is disconnected (with degree of 0)
+	\item[$t_m$] the maximum time. We set this to a point in time that precedes the coalescence time.  
+	This would be the point of infection if we want to rule out the possibility of infection by multiple strains. 	If we rule out the possibility of polymorphism persisting through multiple patients (but not multiple strains being passed within a single infection event), the we would set $t_m$ to the infection time for the individual who infected the patient of interest.
+	If we want to allow multiple infections or persistent polymorphism, then we have to set $t_m$ to a large value that we feel confident will be greater than the MRCA of all sampled sequences.
+	\item[$\edgesAt(t)$], the set of edges that are in existence at time $t$
+	\item[$\lineagesAfter(t)$], the set of lineages that are in existence at time immediately after time $t$. If $t$ corresponds exactly to a coalescence time, then the set of lineages refers to the daughters of the coalescent event (rather than the parent lineages).
+	\item[$\lineagesBefore(t)$], the set of lineages that are in existence at time $t$. If $t$ corresponds exactly to a coalescence time, then the set of lineages refers to the parent of the coalescence (rather than the daughter lineages).
+ 	 \item[$\lineagesAfter(t)-\lineagesBefore(t)$] is the number of lineages that coalesce at time $t$ exactly
+	\item[$\interval{}$] refers to the partition of the continuous timeline $[0,t_m]$ induced by the sampling points. Within each interval no new samples are added and the number of lineages decreases (going backward in time)  within each interval as a result of coalescent events.
+	\item[$\intervalEnd{i}$] the end time point (oldest time) of the interval $\interval{i}$
+	\item[$\intervalBeg{i}$] the start time point (youngest timepoint) of the interval $\interval{i}$
+	\item[$\sweepset{\interval{i}}$] the set of selective sweeps in the interval $\interval{i}$.
+	\item[$\coalescences{t_i}{t_j}$] the set of non-selection based coalescence events with timings of occurrence between $t_i$ and $t_j$.
+	\item[$\genealogy(\interval{i})$] refers to the portion of the genealogy that corresponds to the interval $\interval{i}$
+	\item[$\genealogy(t_i, t_j)$] refers to the portion of the genealogy that between time points $t_i$ and $t_j$
+	 \item[$\timeNext{x}$] refers to the timing of the event after event $x$. This is the time until the next event (unless otherwise stated, an event can be any of the following: coalescences, sampling points, and selective sweeps).
+	 \item[$\outdegree{n}$] the outdegree (number of children) of node $n$
+	 \item[$\indegree{n}$] the indegree (number of parents) of node $n$
+	 \item[$\propProb{}$] is used to denote the probability of proposing a particular proposal type.  For instance, $\propProb{BStC}$ and $\propProb{MCtS}$ denote the probability of ``Bisect Sweep to Child'' and ``Merge Child to Sweep''
+\end{compactitem}
+ 
+\section{Background}
+Notes on the software ``Coalescent Histories Influenced by Migration, Population size, and Selective Sweeps'' -- \chimnesweeps ( I suppose that CHIMPSSSweeps would be clearer).
+
+The motivation is modeling genealogies of HIV within a patient.
+The migration component comes from a desire to model a population of virus incorporated into the host's genome - long generation time, minimal (or no selection), and another population of ``active'' viruses that are found as virions. 
+
+We assume neutrality in the times between selective sweeps.
+Selective sweeps are assumed to be fast (instantaneous, in fact), but not necessarily complete.
+A sweep can lead to a polytomy in the gene tree.
+For the $i$-th sweep through the population, $\sweep{i}$, has a time of occurrence, $\sweeptime{i}$, and a frequency, $\sweepfreq{i}$, in the population. 
+All times are measured as the time before the  last sample point (we can think of this as time before the present).
+The final frequency of the sweep represents the proportion of the population that descends from the selected allele just after the sweep (``final'' does not refer to the frequency of descendants of the sweep at the end of the sampled period).
+If the selected allele in a sweep is the ancestor of some of the samples in the population, then we assume that the sweep can be associated with a single node, $\sweeploc{i}$, that exists at time $\sweeptime{i}$ and is connected to the genealogical tree.
+If none of the alleles in the sample are descended from the sweep, then $\sweeploc{i}$ will have degree 0.
+If the sweep did involve ancestors of the sampled sequences, then the in-degree will be 1, and the out-degree of the node reflects the number of sampled lineages that coalesce as the result of the sweep (the coalescence occurs at the sweep time); in these cases the out-degree can be any positive integer (out-degree of 1 will not correspond to a coalescence).
+So, for a sweep we have $\sweep{i} = (\sweeptime{i},\sweepfreq{i}, \sweeploc{i})$.
+
+\section{Ignoring migration}
+\subsection{Likelihood}
+	We have sequence data, $\sequences$ for samples from multiple time points. 
+	We model these samples as leaves on a genealogy, $\genealogy$.
+	The genealogy refers to a tree topology $\topo$ and set of branch lengths, $\branchlengths$.
+	We assume that there is no recombination and that we have not sampled any selected sites (for the purpose our modeling of the probability of a genealogy and mutations, the targets of all selection is assumed to be at an unsampled, tightly-linked site).
+	These assumptions allow us to use the standard decomposition of the likelihood into a probability of a genealogy given population genetic parameters, and the probability of the sequences as a function of the genealogy and the parameters governing molecular evolution.
+	The population genetic factors are the effective population size, $\popsize$,  and the parameters that control the selective sweeps: $\ratesweep$ the rate of selective sweeps (as a function of absolute time) and $\sweepalpha, \sweepbeta$, the parameters of a Beta distribution used as the prior distribution for the frequency of the selected alleles after a sweep.
+	The mutational model is the HKY model with invariant sites. The parameters are $\basefreqs$ the equilibrium base frequencies, $\kappa$ the transition/transversion rate ratio, and $\pinvar$ is the proportion of invariant sites.
+	Thus the likelihood is:
+\begin{eqnarray}
+	\Pr(\sequences|\popsize,\selectionmodel,\mutmodel,t_m) & = & \int\Pr(\sequences| \genealogy,\mutmodel)\Pr(\genealogy |\popsize,\selectionmodel, t_m)d{\genealogy}
+\end{eqnarray}
+The probability of the sequence data from a genealogy, $\Pr(\sequences| \genealogy,\mutmodel)$, can be calculated using standard algorithms introduced by \cite{Felsenstein1981a}.
+
+The probability of a genealogy comes from a modification of the standard method for coalescent calculations.
+The genealogy can be partitioned into time periods between the three types of events that affect the rate of coalescence within the system:
+\begin{compactenum}
+	\item a coalescence of 2 lineages (this reduces the number of tracked lineages by one),
+	\item a sampling event (this increases the number of tracked lineages by a number equal to the number of sampled sequences from the time point.
+	\item a selective sweep.
+\end{compactenum}
+
+Calculating the probability of a particular genealogy given $\popsize,\selectionmodel, t_m$ entails considering all possible sets of selective sweep events, $\entireSweepSet$.
+We can write:
+\begin{eqnarray}
+\Pr(\genealogy | \popsize, \selectionmodel, t_m) & = & \int\Pr(\genealogy, \entireSweepSet | \popsize, \selectionmodel, t_m) d \entireSweepSet \\
+& = & \int\Pr(\genealogy, \sweepsetLocs | \popsize, \sweepsetTFs)\Pr(\sweepsetTFs |\selectionmodel, t_m) d \entireSweepSet
+\end{eqnarray}
+Here $\Pr(\sweepsetTFs |\selectionmodel,t_m)$ is the probability density of a set sweep timings and frequencies given
+$\selectionmodel$, and  $\Pr(\genealogy, \sweepsetLocs | \popsize, \sweepsetTFs)$ is the probability density of the genealogy and the positioning of the sweep events on tree (treating the sweep timings and frequencies as fixed).
+
+\subsection{Prior probability of sweep scenarios}
+We assume that sweeps are independent events that occur at a constant rate over the entire duration of the infection.
+For each sweep the timing and final frequency are also independent random variables:
+\begin{eqnarray}
+\Pr(\sweepsetTFs |\selectionmodel,t_m) = \Pr\Big(\entireSweepSet^{(t)} \Big| \mbox{\# sweeps}, t_m\Big)\Pr\Big(\entireSweepSet^{(\phi)} \Big| \mbox{\# sweeps}, \sweepalpha, \sweepbeta\Big)\Pr(\mbox{\# sweeps}|t_m, \ratesweep)
+\end{eqnarray}
+
+
+Thus the number of sweeps will be distributed according to a Poisson distribution with the expectation of $\ratesweep t_m$:
+\begin{eqnarray}
+\Pr(\mbox{\# sweeps}|t_m, \ratesweep) = \frac{e^{-\ratesweep t_m}(\ratesweep t_m)^{| \entireSweepSet |}}{| \entireSweepSet |!}
+\end{eqnarray}
+where $| \entireSweepSet | $ is the number of sweeps.
+
+Conditional on the number of sweeps, the joint distribution the sweep times is uniform:
+\begin{eqnarray}
+\Pr\Big(\entireSweepSet^{(t)} \Big| \mbox{\# sweeps}, t_m\Big) & = & \left(\frac{1}{t_m}\right)^{| \entireSweepSet |}
+\end{eqnarray}
+
+The sweep frequencies are assumed to be independent drawn from a Beta distribution:
+\begin{eqnarray}
+\Pr\Big(\entireSweepSet^{(\phi)} \Big| \mbox{\# sweeps}, \sweepalpha, \sweepbeta\Big) & = & \prod_{i = 1}^{|\entireSweepSet|} \frac{\left(\sweepfreq{i}\right)^{\sweepalpha-1}\left(1-\sweepfreq{i}\right)^{\sweepbeta-1}}{B(\sweepalpha, \sweepbeta)}
+\end{eqnarray}
+
+By multiplication we find that:
+\begin{eqnarray}
+\Pr(\sweepsetTFs |\selectionmodel, t_m) & = & \left(\frac{e^{-\ratesweep t_m}\ratesweep^{| \entireSweepSet |}}{| \entireSweepSet |!} \right) \prod_{i = 1}^{|\entireSweepSet|} \frac{\left(\sweepfreq{i}\right)^{\sweepalpha-1}\left(1-\sweepfreq{i}\right)^{\sweepbeta-1}}{B(\sweepalpha, \sweepbeta)}
+\end{eqnarray}
+
+\subsection{Joint probability of genealogy sweep locations}
+Given the timing and final frequencies of each sweep, we can calculate the joint probability density of the genealogies and the relation of the sweeps to the tree.
+
+The number of samples is crucial to the state space of the genealogies, and the sampling intervals are known constants.
+Thus we start by breaking up the calculation as a product of events across sampling intervals (assuming that events in sampling intervals are {\em iid}):
+\begin{eqnarray}
+\Pr\Big(\genealogy, \sweepsetLocs \Big| \popsize, \sweepsetTFs \Big) & = & \prod_{i=1}^{|\interval{}|}\Pr\left[\genealogy(\interval{i}), \sweepsetL{i}  \Big|\popsize, \sweepsetTF{i}\right]
+\end{eqnarray}
+To ease the notational burdens, it is useful to introduce a ``fake'' sweep event into $\sweepset{\interval{i}}$ described by $(\intervalEnd{i}, 0.0, \NULL)$.  
+We will use $\timeNext{\sweep{i}}$ to refer to the time of the sampling or sweep event that occurs immediately after the $\sweep{i}$.
+Finally we will use $s_{i,j}$ to refer to the $j$-th sweep event in the $\interval{i}$
+
+We can breaks up the calculation into probability statements that express the probability of changes in the genealogy caused by the selective sweep and the densities that reflect the probability of the genealogy for time periods that are free of selective sweeps:
+\begin{eqnarray*}
+\Pr\left[\genealogy(\interval{i}), \sweepsetL{i}  \Big|\popsize, \sweepsetTF{i}\right] & = & \prod_{j = 1}^{|\sweepset{\interval{i}}|}\left[\Pr\left(\sweeploc{i,j}|\sweepfreq{i,j},\sweeptime{i,j}\right)\Pr\left(\genealogy\Big(\timeNext{s_{i,j}},\sweeptime{i,j}\Big) \Big|\popsize, \mbox{0 sweeps}\right)\right]
+\end{eqnarray*}
+
+\subsection{Probability of genealogy in between sweeps}
+Finally, we have factors, $\Pr\left(\genealogy\Big(\timeNext{s_{i,j}},\sweeptime{i,j}\Big) \Big|\popsize,\mbox{0 sweeps}\right)$, that come directly from coalescent theory. 
+The probability density of a genealogy for such a time intervals, given that there are no selective sweeps and no additional sampling points within the interval is simply the joint probability of all waiting times and coalescent events in the interval.
+$\coalescences{\timeNext{s_{i,j}}}{\sweeptime{i,j}}$ is the set of coalescent events in this time range; once again we will use the notational trick of adding a fake event at the end of the time interval.
+Note that there are $\lineagesAfter(\timeNext{s_{i,j}})$ lineages at the beginning of the interval.
+\begin{eqnarray}
+\Pr\left(\genealogy(t_i,t_j) \Big|\popsize\right)  & = & \prod_{k = 1}^{|\coalescences{t_i}{t_j}|}\left\{\left(1/\popsize\right)^{1-I(k =|\coalescences{t_i}{t_j}|)} \right.\\
+	&& \left. \left(1-\exp\left[\lineagesAfter[t(c_k)]\lineagesBefore[t(c_k)] (t(c_k)-\timeNext{c_k})/2\popsize\right]\right)\right\}
+\end{eqnarray}
+where $c_k$ is the $k$-th coalescent event within the set $\coalescences{t_i}{t_j}$, and $t(c_k)$ is the time of that event.
+The indicator function is used to make sure that we do not include the ``fake'' coalescence event in the calculation of the probability density.
+Thus the density is the product of the densities of $|\coalescences{t_i}{t_j}|$ coalescence events and $|\coalescences{t_i}{t_j}|+1$ waiting times.
+
+\subsection{Probability of genealogical changes at sweeps}
+The frequency of a sweep and the number of lineages in the genealogy determine the probability of a particular node assignment for the sweep event.
+The final frequency of the sweep would be the proportion of individuals in the instant after the sweep that are descendants 
+of the selected mutant allele if there was no sampling error.
+It is also the probability that any single lineage immediately after the sweep was derived from the selected mutant (if we have no other information).
+Thus the probability of an allele being derived from the selected genotype in the previous instant is 
+$\sweepfreq{i}$ and the probabality of a lineage being derived from the pool of unselected genotypes 
+is $1-\sweepfreq{i}$.
+
+
+We use the node position of the sweep, $\sweeploc{}$ to indicate the latent variable of how many lineages descend from the allele that was selected.
+If the node has degree 0, then no lineages came from the selected allele (all of the lineages are descended from alleles that were selected against, but survived the selection event).
+If the sweep node is connected to the genealogical tree, then it will have a indegree of one (representing the fact that the origin of the selected allele is assumed to be a unique mutational event), and the outdegree will reflect the number of lineages in the genealogy after the sweep that were descendants of the selected allele.
+Note that this can lead to nodes of degree 2 (which are normally suppressed in phylogenetic trees) as well as nodes with degree $> 3$ (polytomies).
+\begin{eqnarray}
+	\Pr\left(\sweeploc{i}|\sweepfreq{i},\sweeptime{i}\right) & = & \left(\sweepfreq{i}\right)^{\outdegree{\sweeploc{i}}}\left(1-\sweepfreq{i}\right)^{|\lineagesAfter{\sweeptime{i}}| - \outdegree{\sweeploc{i}}} 
+\end{eqnarray}
+This  a  probability statement from the binomial probability distribution.
+
+\subsection{Priors}
+To complete a Bayesian specification we would need to place priors on: $\popsize, \ratesweep, \sweepalpha, \sweepbeta, \basefreqs, \kappa,$ and $\pinvar$.
+
+
+\section{Add/Delete Connected Sweep Proposals}
+\subsection{Add connected sweep}
+The add connected sweep proposal (see Algorithm~\ref{acs}) will delete a set of $\mathcal{D}_{*}$ internal nodes (each of which has timing associated with it) and replace them with one sweep node.
+In the algorithmic description $\sweeptime{\mbox{sdes}(z_{*})}$ denotes the time of the oldest sweep among the descendants of $z_{*}$ (thus we crop the window to avoid merging sweep events).
+Note that if there are no children nodes of $e_{*}$ within the $w$ window, then the out-degree of the sweep node
+will be 1.
+
+
+\begin{algorithm} 
+\caption{Add connected sweep}
+\label{acs}
+\begin{algorithmic}[1]
+	\REQUIRE A tree, $T$, with a mrca after $t_m$.
+	\REQUIRE $\lambda_w$, the  hazard parameter of the Exponential distribution for choosing a window width
+	\ENSURE A tree $T_{*}$, which differs from $T$ by having one more sweep, $\sweep{*}$. The outdegree of the sweep node, $\sweeploc{*}$ will be $|\mathcal{D}_{*}| + 1$, and the internal nodes in $\mathcal{D}_{*}$ will be removed from the tree.
+	\STATE $u_1 \sim U(0, t_m)$
+	\STATE $\sweeptime{*} = u_1$
+	\STATE $e_{*} \sim \edgesAt(\sweeptime{*})$
+	\STATE Bisect edge $e_*$ by adding a node, $z_*$, at time $\sweeptime{*}$
+	\STATE $u_2 \sim \min\Big(Exp(\lambda_w), \sweeptime{*} - \sweeptime{\mbox{sdes}(z_{*})}\Big)$
+	\STATE $w_{*} = u_2$
+	\STATE $u_3 \sim U(0,1)$
+	\STATE $\sweepfreq{*} = u_3$
+	\STATE Create a selective sweep node at $\sweep{*} =(\sweeptime{*},\sweepfreq{*}, z_{*})$
+	\STATE Collapsing all internal nodes that  descend from $z_*$ and have times $>\sweeptime{*}-w_*$
+\end{algorithmic}
+\end{algorithm} 
+
+\subsection{Delete connected sweep}
+The delete connected sweep proposal (see algorithm~\ref{dcs}) will delete a connected sweep node and introduce a set of coalescence events to produce a bifurcating portion of the genealogy in place of the sweep node.
+
+\begin{algorithm} 
+\caption{Delete connected sweep}
+\label{dcs}
+\begin{algorithmic}[1]
+	\REQUIRE A tree, $T$, with mrca after  $t_m$.
+	\REQUIRE $\lambda_w$, the hazard parameter of the Exponential distribution for choosing a window width.
+	\ENSURE A tree, $T_{\dag}$, that lacks one sweep event, $\sweep{\dag}$. The parent edge of $\sweep{\dag}$ will be connected to the root of a  subtree, $T(\mathcal{D}_{\dag})$, where $\mathcal{D}_{\dag}$ is the set of new internal nodes.
+	$|\mathcal{D}_{\dag}| = \outdegree{\sweep{\dag}}-1$. If no new internal nodes are created, then the parent edge will connect to the descendant node of $\sweeploc{\dag}$ (resulting in the loss of one edge from the tree as well as the $\sweeploc{\dag}$ node).
+	
+	\IF {the tree has no connected sweep events}
+		\RETURN {(reject the proposal)}
+	\ENDIF
+	\STATE Randomly draw one of the sweep events that are on the tree and call it $\sweep{\dag}$.
+	\STATE $u_1^{\prime} \sim Exp(\lambda_w)$
+	\STATE $w_{\dag} = u_1^{\prime}$
+	\STATE Let $n$ be the sweep nodes that is a descendant of $\sweeploc{\dag}$ and  $ t_n > \sweeptime{\dag} - w_{\dag}$
+	\IF{$n$ exists}
+		\STATE $w_{\dag} = \sweeptime{\dag} - \sweeptime{n}$
+	\ENDIF
+	\STATE Let $m$ be a non-sweep internal node that is a descendant of $\sweeploc{\dag}$ and $ t_m > \sweeptime{\dag} -w_{\dag}$
+	\IF{$m$ exists}
+		\RETURN {(reject the proposal)}
+	\ENDIF
+	\STATE call {\sf RandomLabeledHistory} with the children of $\sweeploc{\dag}$ as the leaves of the history
+	\STATE \label{newNodeHeights} Create a vector of $\outdegree{\sweeploc{\dag}}$ times by drawing from $U(\sweeptime{\dag}-w_{\dag}, \sweeptime{\dag})$.
+	\STATE Sorting the list  of times
+	\STATE Assigning the times to the nodes in the  list $\mathcal{X}$ returned by {\sf RandomLabeledHistory}.
+	\IF{Any internal nodes' age is younger than one of its children}
+		\RETURN {(reject the proposal)}
+	\ENDIF	
+\end{algorithmic}
+\end{algorithm} 
+
+
+\begin{algorithm} 
+\caption{Procedure {\sf RandomLabeledHistory}}
+\label{rlh}
+\begin{algorithmic}[1]
+	\REQUIRE A set of nodes, $\mathcal{L}$, with $|\mathcal{L}| > 1$.
+	\ENSURE A bifurcating tree relating the leaves and a list of internal nodes that provides a complete ordering of node times (times are not assigned, just the order).
+	\STATE $\mathcal{X}\leftarrow []$
+	\WHILE{$|\mathcal{L}| > 1$}
+		\STATE Randomly select 2 distinct nodes, $x$ and $y$ from $\mathcal{L}$
+		\STATE Remove $x$ and $y$ from $\mathcal{L}$
+        \STATE Create ancestral node, $w$, which has these $x$ and $y$ as its children. 
+        \STATE\label{needTimesList} Add $w$ to the end  of $\mathcal{X}$
+        \STATE Add $w$ to the end  of $\mathcal{L}$
+	\ENDWHILE
+	\RETURN {The tree rooted at $w$, and the list $\mathcal{X}$}
+\end{algorithmic}
+\end{algorithm} 
+
+
+
+\subsection{Hastings ratio}
+We will establish an acceptance rule that establishes detailed balance between the
+``add connected sweep'' and ``delete connected sweep'' proposals that select the same value for $w_{\dag}$ and $w_{*}$.
+Other proposals will be needed to establish irreducibility (for example, this proposal does not produce
+sweep events that are not connected to genealogical tree).
+
+Note that both moves use the same cropped exponential to draw the window size.
+We will use the density $f(w_{\dag}| \sweeploc{\dag},\sweeptime{\dag})$ and $f(w_{*}| \sweeploc{*},\sweeptime{*})$ to denote these probability distributions.
+Because $\sweeploc{\dag},\sweeptime{\dag}= \sweeploc{*},\sweeptime{*}$  and $w_* = w_{\dag}$ for the matching pair of moves, the densities associated with $w_{\dag}$ and $w_{*}$ will cross out in the calculation of the Hastings ratio, and these precise formulae for the densities can be ignored.
+The add connected sweep move is capable of placing a connected sweep at any point on the tree, and a 
+delete connected sweep move is possible for any connected sweep event, so the proposals balance in the sense
+that there exists a delete connected sweep move for every possible add connected sweep move and vice versa.
+
+Rather than merely establish detailed balance between the start and ending states via these proposals, we will show detailed balance in the joint space of start and end states along with the value for the window size. 
+Thus we will only consider cases for which $w_{\dag} = w_{*}$, because detailed balance will hold for all possible $w_{*}$ or $w_{\dag}$ that could be drawn by the proposals we can be assured that balance will hold if we were just consider the start and end states (and integrated over all possible window sizes).
+
+A particular add connected sweep proposal is proposed with a probability density of:
+\begin{eqnarray}
+	q_{+}(w_{*},\sweep{*}) & = & \left(\frac{1}{t_m}\right) \left(\frac{1}{|\edgesAt(\sweeptime{*})|}\right) \left(\frac{1}{f(w_{*}|\sweeploc{*},\sweeptime{*})}\right) \left(\frac{1}{1}\right) \\
+	& = & \frac{1}{t_m|\edgesAt(\sweeptime{*})|f(w_{*}|\sweeploc{*},\sweeptime{*})}
+\end{eqnarray}
+The proposal of a sweep frequency $\sweepfreq{*}$ does not make an obvious contribution to the density because the proposal density is 1.0 -- the parameter is drawn from a uniform (0,1.0) distribution.
+
+The number of random numbers drawn the matching delete connected sweep proposal depends on the outdegree of the sweep node.
+If the outdegree is 1, then no new internal node is created (and no internal node was removed in the matching add connected sweep proposal).
+In this case, the probabilities of the reverse proposal only reflect the selection of the particular sweep, and the density associated with choosing the matching window size:
+\begin{equation}
+	q_{-}(w_{\dag},\sweep{\dag}) =\frac{1}{|\connectedSweepSet|f\Big(w_{\dag}\Big|\sweeploc{\dag},\sweeptime{\dag}\Big)}
+\end{equation}
+where $|\connectedSweepSet|$ is the size of the set of connected sweep events.
+
+If $\outdegree{\sweep{\dag}} > 1$, then $\outdegree{\sweep{\dag}}-1$ new nodes will be created.
+For brevity let us set $y=\outdegree{\sweep{\dag}}$.
+The probability of proposing the exact same labelled history to reverse the proposal is:
+\begin{equation}
+	\Pr(T(\mathcal{D}_{\dag})) = \frac{2^{y-1}}{y!(y-1)!}
+\end{equation}
+because we draw a topology randomly from the set of all possible labelled histories and there are $\frac{n!(n-1)!}{2^{(n-1)}}$ such labelled histories for $n$ taxa \citep{Edwards1970}, and the outdegree of the $\sweep{\dag}$ is equivalent to the number of tips in the proposed subtree.
+
+For each new node we draw a new height, from $U(\sweeptime{\dag}-w_{\dag}, \sweeptime{\dag})$ then the times are sorted and added to the newly created internal nodes in the order determined by the selection of the labelled history.
+Thus the distribution of the vector of node heights is the joint density of $y-1$ order statistics of the uniform distribution:
+\begin{equation}
+	f({\mathbf{t}}_{\mathcal{D}_{\dag}}) = \frac{(y-1)!}{w_{\dag}^{y-1}}
+\end{equation}
+
+Thus the final proposal density for the delete connected sweep proposal is:
+\begin{equation}
+	q_{-}(w_{\dag},\sweep{\dag}, T(\mathcal{D}_{\dag})) =\frac{2^{y-1}}{| \connectedSweepSet_* |f\Big(w_{\dag}\Big|\sweeploc{\dag},\sweeptime{\dag}\Big)w_{\dag}^{y-1}y!}
+\end{equation}
+Note that we can use the same formula when the outdegree is 1 because the terms associated with drawing node heights and tree shapes all disappear.
+
+The Jacobian for the proposal pair is one, because all of the random number to parameter mappings are simply setting the parameter to the value of the random number.
+$u_1$ and $u_3$ of the forward proposal determine the $\sweeptime{*}$ and the $\sweepfreq{*}$, the vector of random numbers drawn in step \ref{newNodeHeights} of the delete connected sweep proposal are simply used as the new node heights (without transformation).
+
+\subsubsection{Prior ratio}
+The prior ratio for adding a sweep event, $\sweep{*}$ is composed of:
+\begin{compactitem}
+	\item the prior ratio for the number of events,  $\frac{\ratesweep t_m}{|\entireSweepSet_{*}|}$, where $\entireSweepSet_{*}$ refers the the set of sweeps {\em after} the addition. 
+	\item the prior ratio for the set of sweep frequencies -- all terms cancel out accept for density of the frequency parameter for $\sweep{*}$. This is: $\frac{\sweepfreq{*}^{\sweepalpha-1}\left(1-\sweepfreq{*}\right)^{\sweepbeta-1}}{B(\sweepalpha, \sweepbeta)}$
+	\item the prior ratio for the set of sweep times -- all terms cancel out accept for density of the frequency time for $\sweep{*}$. This is: $\frac{1}{t_m}$
+	\item the prior ratio for the genealogy with sweeps given the number and timing of sweeps: \\$\Pr\Big(\genealogy, \sweepsetLocs_{*} \Big| \popsize, \sweepsetTFs_{*} \Big)/\Pr\Big(\genealogy, \sweepsetLocs \Big| \popsize, \sweepsetTFs \Big)$\\
+	lots of terms will cancel here two, but the cancelling is difficult to express (because the terms that don't cancel may span several intervals).
+\end{compactitem}
+
+\subsection{Acceptance ratio}
+Thus if we propose the add connected sweep and the delete connected sweep proposals with the same probability the acceptance ratio for accepting an add connected sweep proposal is:
+
+\begin{eqnarray}
+	a_{*} & = & a(T,T-\mathcal{D}_* + \sweep{*}) \nonumber \\
+	 & = & \left(\frac{\Pr(X|T-\mathcal{D}_* + \sweep{*})}{\Pr(X|T)}\right)\left(\frac{\Pr(T-\mathcal{D}_* + \sweep{*})}{\Pr(T)}\right)\left(\frac{q_{-}(w_{*},\sweep{*}, T(\mathcal{D}_{*}))}{q_{+}(w_{*},\sweep{*})}\right) |J| \nonumber \\
+	 & = & \left(\frac{\Pr(\sequences| \genealogy_{*},\mutmodel)}{\Pr(\sequences| \genealogy,\mutmodel)}\right)\left(\frac{\Pr\Big(\genealogy, \sweepsetLocs_{*} \Big| \popsize, \sweepsetTFs_{*} \Big)}{\Pr\Big(\genealogy, \sweepsetLocs \Big| \popsize, \sweepsetTFs \Big)}\right) \ldots \nonumber \\
+	 && \ldots\left(\frac{2^{y-1} \ratesweep t_m |\edgesAt(\sweeptime{*})| \sweepfreq{*}^{\sweepalpha-1}\left(1-\sweepfreq{*}\right)^{\sweepbeta-1}}{w_{\dag}^{y-1}y!| \connectedSweepSet_* ||\entireSweepSet_{*}|B(\sweepalpha, \sweepbeta)}\right) 
+	 \frac{}{}
+\end{eqnarray}
+
+\section{Add/Delete Disonnected Sweep Proposals}
+
+\begin{algorithm} 
+\caption{Add disconnected sweep}
+\label{ads}
+\begin{algorithmic}[1]
+	\REQUIRE A tree, $T$, with a mrca after $t_m$.
+	\ENSURE A tree $T_{*}$, which differs from $T$ by having one more sweep, $\sweep{*}$. The degree of $\sweeploc{*}$ is 0.
+	\STATE $u_1 \sim U(0, t_m)$
+	\STATE $\sweeptime{*} = u_1$
+	\STATE $u_2 \sim U(0,1)$
+	\STATE $\sweepfreq{*} = u_3$
+	\STATE create a selective sweep node at $\sweep{*} =(\sweeptime{*},\sweepfreq{*}, \NULL)$.
+\end{algorithmic}
+\end{algorithm} 
+\begin{algorithm} 
+\caption{Delete disconnected sweep}
+\label{dds}
+\begin{algorithmic}[1]
+	\REQUIRE A tree, $T$, with a mrca after $t_m$.
+	\ENSURE A tree $T_{*}$, which differs from $T$ by having one fewer disconnected sweep, $\sweep{\dag}$.
+	\IF{$T$ has no disconnected sweeps}
+		\RETURN {(reject the proposal)}
+	\ENDIF
+	\STATE choose $\sweep{\dag}$ at random from the set of all disconnected sweeps
+	\STATE delete $\sweep{\dag}$
+\end{algorithmic}
+\end{algorithm} 
+
+\subsection{Acceptance ratio}
+\subsubsection{Hastings ratio}
+In favor of an add disconnected sweep event:
+\begin{eqnarray}
+ 	\frac{\frac{1}{|\entireSweepSet_{*}| - |\connectedSweepSet_{*}|}}{\frac{1}{t_m}} & = & \frac{t_m}{|\entireSweepSet_{*}| - |\connectedSweepSet_{*}|}
+\end{eqnarray}
+
+\subsubsection{Likelihood ratio}
+The likelihood ratio for the proposal is 1 because the  genealogy is unchanged by the addition or deletion of a disconnected sweep event.
+
+\subsubsection{Prior ratio}
+The prior ratio for the add disconnected sweep proposal is:
+\begin{eqnarray}
+	\frac{\ratesweep  \sweepfreq{*}^{\sweepalpha-1}\left(1-\sweepfreq{*}\right)^{|\edgesAt(\sweeptime{*})| + \sweepbeta-1}}{|\entireSweepSet_{*}|B(\sweepalpha, \sweepbeta)}
+\end{eqnarray}
+
+\section{Updating sweep frequencies}
+The frequency of a sweep event can be updated by Gibbs sampling because of conjugacy between the binomial distribution that gives $\Pr\left(\sweeploc{i}|\sweepfreq{i},\sweeptime{i}\right) $ and the Beta prior on each $\sweepfreq{}$.
+Thus if we can update the sweep frequency for sweep $\sweep{i}$ by drawing from:
+\[ \mbox{Beta}\left(\sweepalpha + \outdegree{\sweeploc{i}}, \sweepbeta + |\lineagesAfter{\sweeptime{i}}| - \outdegree{\sweeploc{i}}\right) \]
+
+\section{Updating node times}
+The time associated with an internal node can be updated by drawing a new node depth from a uniform distribution bounded by the age of the node's parent (or $t_m$ if the node is the root of the tree) and age of the node's closest (oldest) child.
+
+\section{Merge to Sweep and Bisect Sweep Proposals}
+The pair of proposals described in algorithms \ref{mts} and \ref{bst} balance each other. 
+
+\begin{algorithm} 
+\caption{Merge to Sweep proposal}
+\label{mts}
+\begin{algorithmic}[1]
+	\REQUIRE A tree, $T$.
+	\ENSURE $T_*$, a tree identical to $T$ except that one internal node $n_*$ has been merged with a sweep node, $\sweeploc{*}$, that had been its neighbor. If $n_*$ had been the parent of $\sweeploc{*}$, then $\sweeptime{*} = t_{n_*}$
+	\STATE Let $\internalConnectedSweepSet$ be the set of all sweep events that are connected to the tree and for which the node corresponding to the sweep has at least one neighbor that is an internal node that is not a sweep node. 
+	\IF{$\internalConnectedSweepSet = \emptyset$}
+		\RETURN{(reject the proposal)}
+	\ENDIF
+	\STATE Choose $\sweep{*}$ at random from $\internalConnectedSweepSet$
+	\STATE Let $\mathcal{N}_{s*}$ be the set of internal nodes that are neighbors of  $\sweeploc{*}$ but are not sweep event nodes.
+	\STATE Choose $n_*$ at random from $\mathcal{N}_{s*}$
+	\IF{$n_*$ is the parent of $\sweeploc{*}$}
+		\STATE make the sister of $\sweeploc{*}$ into one of the children of $\sweeploc{*}$
+		\STATE make the parent of $\sweeploc{*}$ the node that is the parent of $n_*$.
+	\ELSE
+		\STATE  move both of the children of $n_*$ so that they are children of $\sweeploc{*}$
+	\ENDIF
+	\STATE delete $n_*$
+\end{algorithmic}
+\end{algorithm} 
+
+\begin{algorithm} 
+\caption{Bisect Sweep proposal}
+\label{bst}
+\begin{algorithmic}[1]
+	\REQUIRE tree, $T_*$
+	\ENSURE $T$ -- a tree identical to $T_*$ except that a new internal node,  $n_*$, has been introduced as a neighbor of $\sweeploc{*}$. Where $\sweep{*}$ is a sweep event that has $\outdegree{*}>1$. The new node will either be the parent $\sweeploc{*}$ (in which case one of the former children of $\sweeploc{*}$ will be moved to become the sister of $\sweeploc{*}$), or new node will be a new child of $\sweeploc{*}$ (in this case, two of the nodes that had been children of $\sweeploc{*}$ will be moved to be children of $n_*$).
+	\STATE Let $\outdegConnectedSweepSet $ be the set of all sweep events that have an outdegree greater than 1.
+	\IF{$\outdegConnectedSweepSet = \emptyset$}
+		\RETURN{(reject the proposal)}
+	\ENDIF
+	\STATE Choose $\sweep{*}$ at random from $\outdegConnectedSweepSet $
+	\STATE (For the sake of brevity) $y = \outdegree{\sweeploc{*}}$
+	\IF{random number $< \frac{1}{y}$}
+		\STATE select one child of $\sweeploc{*}$, and call it $c_{*}$.
+		\COMMENT{This is the Bisect Sweep to Parent Proposal}
+		\STATE Create a new node, $n_*$
+		\STATE $t_{n_{*}}=\sweeptime{*}$
+		\STATE Set the parent of $n_*$ to be the node that had been parent of $\sweeploc{*}$ (or $\NULL$ if $\sweeploc{*}$ had been the root).
+		\STATE Set the children of $n_*$ to be $\sweeploc{*}$ and $c_*$.
+		\STATE Let $d(\sweeploc{*})$ be the set of nodes that are descendants of $\sweeploc{*}$ (the oldest node that is a descendant of $\sweeploc{*}$ will be a child of $\sweeploc{*}$ so it is sufficient to examine just the children). Note that at this point $c_*$ in not a child of $\sweeploc{*}$.
+		\STATE  $u_1 \sim U(\max({t_{d(\sweeploc{*})}}),\sweeptime{*})$
+		\STATE $\sweeptime{*} = u_1$
+	\ELSE
+		\STATE Choose two children of $\sweeploc{*}$ and call them $l_*$ and $r_*$ 
+		\COMMENT{This is the Bisect Sweep to Child Proposal}
+		\STATE Create a new node, $n_*$
+		\STATE  $u_1 \sim U(\max(t_{l_*},t_{r_*}),\sweeptime{*})$
+		\STATE Set $t_{n_{*}}=u_1$. 
+		\STATE Set the parent of $n_*$ to be $\sweeploc{*}$
+		\STATE Set the children of $n_*$ to be $l_*$ and $r_*$.
+	\ENDIF
+\end{algorithmic}
+\end{algorithm} 
+\subsection{Acceptance ratio}
+Note that the ``Bisect Sweep to Child'' proposal can achieve detailed balance with the ``Merge Child to Sweep'' proposal.
+The ``Merge Parent to Sweep'' and the ``Bisect Sweep to Parent'' proposal achieve detailed balance with each other.
+
+We propose bisecting proposals with probability $\propProb{BSt}$ and merge to sweep proposals with probability $\propProb{MtS}$.
+
+\subsection{Hastings ratio}
+The probability of proposing a particular Merge Child to Sweep proposal is:
+\[ \frac{\propProb{MCt}}{| \internalConnectedSweepSet | |\mathcal{N}_{s*}|}\]
+
+In order to reverse the proposal, one must select the same sweep, the same child of the sweep and then the exact value for $u_1$ to recreate the node height.
+For a Bisect Sweep to Child proposal this probability density is:
+\[ \frac{\propProb{BSt}}{| \outdegConnectedSweepSet | \left(\outdegree{\sweeploc{*}}\right)^2(\sweeptime{*} - \max(t_{l_*},t_{r_*}))}\]
+
+The Jacobian is 1, so the product of the Hastings ratio for a Merge Child to Sweep proposal is:
+\[ \hastings{MCtS} =\frac{\propProb{BSt}| \internalConnectedSweepSet | |\mathcal{N}_{s*}|}{\propProb{MtS}| \outdegConnectedSweepSet | \left(\outdegree{\sweeploc{*}}\right)^2(\sweeptime{*} - \max(t_{l_*},t_{r_*}))}\]
+
+For a Bisect Sweep to Parent proposal this probability density is:
+\[ \frac{\propProb{BSt}}{| \outdegConnectedSweepSet | \left(\outdegree{\sweeploc{*}}\right)^2(\sweeptime{*} - \max({t_{d(\sweeploc{*})}}))}\]
+
+The Jacobian is 1, so the product of the Hastings ratio for a Merge Parent to Sweep proposal is:
+\[ \hastings{MPtS} =  \frac{\propProb{BSt}| \internalConnectedSweepSet | |\mathcal{N}_{s*}|}{\propProb{MtS}| \outdegConnectedSweepSet | \left(\outdegree{\sweeploc{*}}\right)^2(\sweeptime{*} - \max({t_{d(\sweeploc{*})}}))}\]
+
+\section{Sweep Modified Larget-Simon LOCAL with clock}
+\citet{LargetS1999} introduced a local proposal ``LOCAL with a Molecular Clock'' that changes the heights of two nodes in an ultrametric tree and is capable of introducing NNI changes to topology.
+The move is described is algorithm \ref{lsl}.
+In our context we are measuring node depths as time before present, and we have maximum time, $t_m$ to enforce.  We also have to distinguish between nodes that are sweep nodes (and can have any degree) and those internal nodes that are not associated with a sweep (and thus must have outdegree of 2).
+So we will use a topology changing move that is similar to the Larget-Simon LOCAL with clock.
+
+\begin{algorithm} 
+\caption{Sweep Modified Larget Simon LOCAL with clock}
+\label{lsl}
+\begin{algorithmic}[1]
+	\STATE Select an internal edge, $e_{*}$, at random from the tree.
+	\STATE Label the parent node $v$.
+	\STATE Label the child node $u$.
+	\IF{$v$ is not the root}
+		\STATE the nodes are labeled:$(((a,b)u,c)v,-)w$ where $-$ denotes a clade (the sister of $v$) that is not affected by the move. 
+		\STATE \label{LSLocal} Reverse sort $t_a$, $t_b$, and $t_c$ and refer to the node ages as $h_1$ (oldest), $h_2$, and $h_3$ youngest.
+		\STATE $u_1\sim U(t_w, h_1)$
+		\STATE $u_2\sim U(t_w, h_2)$
+		\IF{$u_2 > h_1$}
+			\STATE randomly select one $a$, $b$, or $c$ as a child of $v_*$. The other two nodes become children of $u_*$ (and $u_*$ is a child of $v_*$).
+			\STATE $t_{v*} = \max(u_1,u_2)$
+			\STATE $t_{u*} = \min(u_1,u_2)$
+		\ELSE
+			\STATE $t_{v*}  = u_1$
+			\STATE $t_{u*}  = u_2$
+			\STATE the node at height $h_1$ and $u_*$ are children of $v_*$. The other two nodes become children of $u_*$.
+		\ENDIF
+	\ELSE
+		\STATE the tree is $(((a,b)u,c)v$
+		\STATE new heights are drawn for $a,b,u,$ and $c$ and the topology may change. In Larget and Simon's parameterization the root is defined to be at height 0, so lengthening the tree is done by adding height to the children of the root.
+		\STATE a new height and possibly connections are drawn for $u_*$
+	\ENDIF
+\end{algorithmic}
+\end{algorithm} 
+
+\begin{algorithm} 
+\caption{Sweep Modified Larget Simon LOCAL with clock}
+\label{algStart}
+\begin{algorithmic}[1]
+	\STATE Select an internal edge, $e_{*}$, at random from the tree.
+	\STATE Label the parent node $v$.
+	\STATE Label the child node $u$.
+	\IF{$u$ and $v$ are both sweep nodes}
+		\RETURN {reject the proposal}
+	\ENDIF
+	\IF{If neither $u$ nor $v$ are sweep nodes}
+		\IF{$v$ is not the root}
+			\STATE Perform a {\sf LargetSimonLOCALwithClock} proposal starting at step \ref{LSLocal}
+		\ELSE
+			\STATE Perform a {\sf LOCALConstrainedHeight} proposal.
+		\ENDIF
+	\ELSIF{$v$ is not the root}
+		\STATE Perform a {\sf LOCALSweep} proposal 
+	\ELSE
+		\STATE Perform a {\sf LOCALConstrainedHeightSweep} proposal.
+	\ENDIF
+\end{algorithmic}
+\end{algorithm} 
+
+Throughout we retain the notation that $h_1$ is the oldest of the children of $u$ and $v$.
+We will use $h_{-1}$ to refer to the youngest child of $u$ and $v$; and $h_{-2}$ to refer to the second youngest child, {\em etc}.
+
+\subsection{LOCAL constrained height proposal}
+Algorithm continued from \ref{algStart}, above. This is the case in which $v$ is the root and neither $v$ nor $u$ are sweep nodes.
+
+\begin{algorithm} 
+\caption{{\sf LOCALConstrainedHeight} proposal}
+\label{lch}
+\begin{algorithmic}[1]
+	\REQUIRE A tree with $v\rightarrow u$ in which neither $v$ nor $u$ are sweep nodes and $v$ is not the root.  $\{a,b,c\}$ are the nodes that are the children of $u$ and $v$ ($u$ is not included in this set).
+	\REQUIRE $\lambda_r$ is half the window size for the root move.
+	\STATE $u_1 \sim U(-\lambda_r, \lambda_r)$
+	\STATE set $t_{v*} = t_{v} + u_1$ with reflections on the boundaries which $h_1$ on the lower end and  $t_m$
+	\STATE $u_2 \sim U(h_2, t_{v*})$
+	\STATE $t_{u*} = u_2$
+	\IF{$u_2 < h_1$}
+		\STATE make the children of $v$ be $u$ and the node that corresponds to time $h_1$. 
+		\STATE The other two nodes will be the children of $u$
+	\ELSE
+		\STATE make the children of $v$ be $u$ and a node selected at random from $\{a,b,c\}$. 
+		\STATE The other two nodes will be the children of $u$
+	\ENDIF
+\end{algorithmic}
+\end{algorithm} 
+
+
+\subsubsection{Hastings Ratio}
+If $u > h_1$ and $u_{*} < h_1$ then the Hastings ratio is:
+\[\frac{t_{v*}-h_1}{3(t_v-h_1)}\]
+If $u < h_1$ and $u_{*} > h_1$ then the Hastings ratio is:
+\[\frac{3(t_{v*}-h_1)}{(t_v-h_1)}\]
+Otherwise the Hastings ratio is:
+\[\frac{(t_{v*}-h_1)}{(t_v-h_1)}\]
+
+These ratios reflect the fact that the choice of the root height is symmetric, but the probability density of $u_2$ is $1/(t_{v*}-h_1)$ in the forward direction and $1/(t_{v}-h_1)$ for the reverse move.
+
+
+\subsection{LOCAL constrained height sweep proposal}
+See algorithm \ref{lchs}.
+\begin{algorithm} 
+\caption{{\sf LOCALConstrainedHeightSweep} proposal}
+\label{lchs}
+\begin{algorithmic}[1]
+	\REQUIRE A tree with $v\rightarrow u$ in which either $v$ or $u$ (but not both) are sweep nodes and $v$ is the root.	\REQUIRE $\lambda_r$ is half the window size for the root move.
+	\STATE Let $\mathcal{N}$ be the set of nodes that are neighbors of $u$ or $v$ (except that $u$ and $v$ are excluded from the list)
+	\STATE $u_1 \sim U(-\lambda_r, \lambda_r)$.
+	\STATE set $t_{v*} = t_{v} + u_1$ with reflections on the boundaries which $h_1$ on the lower end and  $t_m$
+	\IF{RandomNumber() $ < 0.5$}
+		\STATE Make $v_*$ a sweep node, $u_*$ is not a sweep node
+		\STATE $u_2 \sim U(h_{-2}, t_{v*})$
+		\STATE $t_{u*} = u_2$
+		\STATE Let $\mathcal{C}_{u_*}$ refer to the set of children and siblings of $u$ that have times $< t_{u*}$. These nodes can be children of $u_*$. Note that because of the constraints we put on $u_2$, there will be at least 2 such nodes.
+		\STATE Draw two distinct nodes $l$ and $r$ from $\mathcal{C}_{u_*}$
+		\STATE make $l$ and $r$ be the only children of $u_{*}$
+		\STATE All other nodes in $\mathcal{N}$ will become children of $v_{*}$
+	\ELSE
+		\STATE Make $u_*$ a sweep node, $v_*$ is not a sweep node
+		\STATE $u_2 \sim U(h_{2}, t_{v*})$
+		\STATE $t_{u*} = u_2$
+		\IF{$u_2 < h_1$ }
+			\STATE Make $u_*$ and the node attached at $h_1$ as the children of $v_*$.  
+		\ELSE
+			\STATE Attach  $u_*$ and one node chosen at random from $\mathcal{N}$ as children of $v_*$. 
+		\ENDIF
+		\STATE Attach all other nodes in $\mathcal{N}$ as children of $u_{*}$
+	\ENDIF
+\end{algorithmic}
+\end{algorithm} 
+ 
+ 
+\subsubsection{Hastings Ratio}\label{HRSweepLocalRoot}
+There are six cases. The densities associated with drawing $u_1$ cross out, and so are omitted from the Hastings ratio.
+Let $\mathcal{A}_u$ refer to the set of nodes in $\mathcal{N}$ with timepoints after node $u$.
+
+\begin{compactenum} 
+	\item If $v$ was the sweep node:
+	\begin{compactenum} 
+		\item If $v_*$ is the sweep node:
+		\[\frac{(t_{v*}-h_{-2})|\mathcal{A}_{u_*}|(|\mathcal{A}_{u_*}|-1)}{(t_{v}-h_{-2})|\mathcal{A}_{u}|(|\mathcal{A}_{u}|-1)}\]
+	   \item Otherwise (if $u_*$ is the sweep node):
+		\begin{compactenum} 
+			\item If $t_{u_*} < h_1$ then:
+		\[\frac{2(t_{v*}-h_{2})}{(t_{v}-h_{-2})|\mathcal{A}_{u}|(|\mathcal{A}_{u}|-1)}\]
+			\item Otherwise (if $t_{u_*} \geq h_1$) then:
+		\[\frac{2(t_{v*}-h_{2})|\mathcal{N}|}{(t_{v}-h_{-2})|\mathcal{A}_{u}|(|\mathcal{A}_{u}|-1)}\]
+		\end{compactenum} 
+	\end{compactenum} 
+	\item Otherwise (if $u$ was the sweep node):
+	\begin{compactenum} 
+		\item If $v_*$ is the sweep node:
+		\begin{compactenum} 
+			\item If $t_{u} < h_1$:
+			\[\frac{(t_{v*}-h_{-2})|\mathcal{A}_{u_*}|(|\mathcal{A}_{u_*}|-1)}{2(t_{v*}-h_{2})}\]
+			\item otherwise (if $t_{u} \geq h_1$) then:
+			\[\frac{(t_{v*}-h_{-2})|\mathcal{A}_{u_*}|(|\mathcal{A}_{u_*}|-1)}{2(t_{v}-h_{2})|\mathcal{N}|}\]
+		\end{compactenum} 
+		\item Otherwise (if $u_*$ is the sweep node):
+		\begin{compactenum} 
+			\item If $t_{u} < h_1$ and $t_{u_*} \geq h_1$) then:
+				\[ \frac{(t_{v*}-h_{2})|\mathcal{N}|}{(t_{v}-h_{2})} \]
+			\item If $t_{u} \geq h_1$ and  $t_{u_*} < h_1$ then:
+				\[\frac{(t_{v*}-h_{2})}{(t_{v}-h_{2})|\mathcal{N}|}\]
+			\item otherwise (if $t_{u_*} \geq h_1$) then:
+				\[ \frac{(t_{v*}-h_{2})}{(t_{v}-h_{2})} \]
+		\end{compactenum} 
+	\end{compactenum} 
+\end{compactenum} 
+
+\subsection{LOCAL sweep proposal}
+See algorithm \ref{prop:localSweep}.
+The Hastings ratio is the same as those calculated above in \ref{HRSweepLocalRoot} except, that we use $t_w$ (the timing of $w$) in the densities rather than $t_v$ or $t_{v*}$.  
+Because $t_w$ does not change in the move and neither do $h_2$ nor $h_{-2}$, the use of $t_w$ in the densities will cause the factors to cancel in many cases.
+\begin{algorithm}[h]
+\caption{Local Sweep}
+\label{prop:localSweep} 
+\begin{algorithmic}[1]
+	\REQUIRE A tree with $v\rightarrow u$ in which either $v$ or $u$ (but not both) are sweep nodes and $v$ is not the root.
+	\STATE $\mathcal{N}$ refers to the set of nodes that are children of $u$ or $v$ (except that $u$ is excluded from the list),
+	\STATE Reverse sort the times associated with $\mathcal{N}$.
+	\STATE $u_1\sim U(t_w, h_1)$
+	\IF{$U(0,1) < 0.5$}
+		\STATE make $v_*$ the sweep node.
+		\STATE $u_2 \sim U(h_{-2}, t_w)$
+		\STATE $t_{v_*} = \max(u_1,u_2)$
+		\STATE $t_{u_*} = \min(u_1,u_2)$
+		\STATE Randomly select 2 distinct nodes from $\mathcal{A}_{u_*}$ and make them the children of $u_*$
+		\STATE All other nodes in $\mathcal{N}$  and $u_*$ become the children to $v_*$.
+	\ELSE
+		\STATE make $u*$ the sweep node.
+		\STATE $u_2 \sim U(h_{2}, t_w)$
+		\STATE $t_{v_*} = \max(u_1,u_2)$
+		\STATE $t_{u_*} = \min(u_1,u_2)$
+		\IF{$t_{u_*} < h_1$}
+			\STATE Attach the node at $h_1$ to $v_*$
+			\STATE All other nodes in $\mathcal{N}$ become children of $u_*$
+		\ELSE
+		  	\STATE Randomly choose a node from $\mathcal{N}$ to be the child of $v_*$.
+			\STATE All other nodes in $\mathcal{N}$ become children of $u_*$
+		\ENDIF
+	\ENDIF
+\end{algorithmic}
+\end{algorithm} 
+
+
+\section{Continuous parameter updates}
+All of the continuous parameters in the model can be updated using standard proposals (or slice sampling).
+In the initial version of $\chimnesweep$, we will use symmetric proposals generated by drawing an offset from a uniform distribution centered around 0, and then adding this offset to the current parameter value (using reflection in the case of boundary constraints on the parameter values).
+
+\section{Notes}
+Note that in  the proposals that introduce a new sweep with a new sweep frequency, the beta density can be removed from the acceptance ratio by drawing the new sweep frequency from the Beta distribution that is used as a prior for the frequency parameters (rather than drawing the sweep frequency from a $U(0,1)$ distribution).
+
+
+
+\bibliography{phylo}
+ \end{document}  
